@@ -1,0 +1,141 @@
+{% load leaflet_tags %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    {% leaflet_css %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <style>
+      .leaflet-container { height: 90vh; }
+      .leaflet-routing-container { width: 100% }
+    </style>
+
+    <title>Cycling Routes</title>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">Cycling Routes</a>
+        <form class="form-inline" action="{% url 'home' %}" method="post">
+            {% csrf_token %}
+            <div class="form-row">
+              <div class="col">
+              {{ form.selected_route_id }}
+              </div>
+              <div class="col">
+                <input class="form-control btn btn-success" type="submit" value="Go" aria-label="Go">
+              </div>
+            </div>
+        </form>
+        <div class="col">
+          <button id="audio_control" onclick="audio_control()" class="btn btn-primary">Audio Display</button>
+        </div>
+    </nav>
+    <div class="containter-fluid mb-3">
+      <div id="map" class="row row-eq-height my-1 ml-0 w-100 ">
+        <div class="col">
+          <div class="card">
+          {% leaflet_map "main" callback="window.map_init" %}
+          </div>
+        </div>
+        <div class="col-3  pl-0">
+          <div class="card h-100" style="width: 90%">
+            <div class="card-body p-2" id="controls">
+              <h5 class="card-title">Route Info</h5>
+              <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+          </div>
+        </div>
+      </div>
+      {% if selected_route and selected_route.audio_display %}
+      {% load static %}
+      <div class="row">
+        <audio id="audio_display">
+          <source src="{{ MEDIA_URL }}{{ selected_route.audio_display }}" />
+        </audio>
+      </div>
+      {% endif %}
+    </div>
+    {% leaflet_js %}
+    <script type="text/javascript" src="https://unpkg.com/requirejs@latest/require.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script type="text/javascript" src="http://www.liedman.net/lrm-graphhopper/dist/lrm-graphhopper-1.2.0.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    {{ selected_route|json_script:"selected_route" }} 
+    <script type="text/javascript">
+      var control;
+      function map_init(map, options) {
+        var southWest = L.latLng(13.02504085518189, 80.23609399795532),
+            northEast = L.latLng(13.026849183135116, 80.23797690868378),
+            bounds = L.latLngBounds(southWest, northEast);
+
+        selected_route = JSON.parse(document.getElementById('selected_route').textContent);
+
+        {% if selected_route %}
+        var latlng = new L.LatLng((parseFloat(selected_route.lat_start) + parseFloat(selected_route.lat_end)) / 2.0,  (parseFloat(selected_route.lng_start) + parseFloat(selected_route.lng_end)) / 2.0),
+        map = map.setView(latlng, 18);
+        {% else %}
+        navigator.geolocation.getCurrentPosition(function(location) {
+            var latlng = new L.LatLng(location.coords.latitude, location.coords.longitude);
+            map = map.setView(latlng, 13);
+        });
+        {% endif %}
+
+        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}{r}.png', {
+          attribution: '© OpenStreetMap contributors', 
+          maxZoom: 18, 
+          bounds:bounds,
+        }).addTo(map);
+
+        {% comment %} L.Control.geocoder().addTo(map); {% endcomment %}
+
+        control = L.Routing.control({
+          router: L.Routing.graphHopper('e104169d-d857-4cee-85bf-c03dc32330b5', {
+            urlParameters: {vehicle: 'bike'}
+          }),
+          {% if selected_route %}
+          waypoints: [
+            L.latLng(parseFloat(selected_route.lat_start), parseFloat(selected_route.lng_start)),
+            L.latLng(parseFloat(selected_route.lat_end), parseFloat(selected_route.lng_end)),
+          ], 
+          {% endif %}
+          routeWhileDragging: true, 
+          fitselected_routes: true,
+          geocoder: L.Control.Geocoder.nominatim()
+        })
+        .on('routeselected', function(e) {
+          var route = e.route;
+        })
+        .addTo(map);
+
+        control.hide();
+
+        var controlDiv = control.onAdd(map);
+        document.getElementById('controls').appendChild(controlDiv);
+      }
+
+      function audio_control() {
+        var audio = document.getElementById('audio_display'), 
+            control = document.getElementById('audio_control');
+        if (!audio.paused && audio.currentTime) {
+          audio.pause();
+          control.innerText = "Audio Display"
+          control.classList.remove('btn-secondary');
+          control.classList.add('btn-primary');
+        } else {
+          audio.play();
+          control.innerText = "Pause"
+          control.classList.remove('btn-primary');
+          control.classList.add('btn-secondary');
+        }
+      }
+    
+    </script>
+  </body>
+</html>
