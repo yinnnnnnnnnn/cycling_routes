@@ -46,7 +46,9 @@
           <div class="card h-100" style="width: 90%">
             <div class="card-body p-2" id="controls">
               <h5 class="card-title">Route Info</h5>
-              <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+              <p class="card-text">{{ selected_route.title }}</p>
+              <div id="route_detail"></div>
+              <p class="card-text">{{ selected_route.description }}</p>
           </div>
         </div>
       </div>
@@ -107,10 +109,16 @@
           {% endif %}
           routeWhileDragging: true, 
           fitselected_routes: true,
-          geocoder: L.Control.Geocoder.nominatim()
+          {% comment %} geocoder: L.Control.Geocoder.nominatim() {% endcomment %}
         })
         .on('routeselected', function(e) {
           var route = e.route;
+          const route_detail = `
+            <div class="card-text">
+              <p><span class="font-weight-bold">Total Ascend: </span>${route.summary.totalAscend}</p>
+            </div>
+          `;
+          document.getElementById('route_detail').innerHTML = route_detail;
         })
         .addTo(map);
 

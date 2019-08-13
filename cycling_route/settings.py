@@ -25,7 +25,7 @@ SECRET_KEY = ')*&#&+t$40c(4&g*z-rf&tls8iu#m3&+kd$xbz#*&(dlf)w!yu'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['tearsheart.pythonanywhere.com']
+ALLOWED_HOSTS = ['localhost', 'tearsheart.pythonanywhere.com']
 
 
 # Application definition
