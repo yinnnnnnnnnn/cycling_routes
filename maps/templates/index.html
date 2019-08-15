@@ -179,7 +179,7 @@
           markers.toggleClass('show');
         } else {
           $.ajax({
-              url: 'https://api.cyclestreets.net/v2/pois.locations?key=9be741272a178f7a&type=cycleparking&bbox=' + leaflet_map.getBounds().toBBoxString() + '&limit=3&fields=id,latitude,longitude,name,osmTags', 
+              url: 'https://api.cyclestreets.net/v2/pois.locations?key=9be741272a178f7a&type=cycleparking&bbox=' + leaflet_map.getBounds().toBBoxString() + '&limit=20&fields=id,latitude,longitude,name,osmTags', 
               dataType: 'json',
               success: function(data) {
                 data.features.forEach(function(feature) {
