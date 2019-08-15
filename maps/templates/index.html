@@ -31,9 +31,14 @@
               </div>
             </div>
         </form>
+        {% if selected_route %}
         <div class="col">
-          <button id="audio_control" onclick="audio_control()" class="btn btn-primary">Audio Display</button>
+          <button id="audio_control" onclick="audio_control()" class="btn btn-primary" type="button">Audio Display</button>
+          <button id="toggle_surfaces" onclick="toggle('route_surface')" class="btn btn-primary" type="button">Surfaces</button>
+          <button id="toggle_calories" onclick="toggle('route_calories')" class="btn btn-primary" type="button">Calories</button>
+          <button id="toggle_elevation" onclick="toggle('route_elevation')" class="btn btn-primary" type="button">Elevation</button>
         </div>
+        {% endif %}
     </nav>
     <div class="containter-fluid mb-3">
       <div id="map" class="row row-eq-height my-1 ml-0 w-100 ">
@@ -47,8 +52,24 @@
             <div class="card-body p-2" id="controls">
               <h5 class="card-title">Route Info</h5>
               <p class="card-text">{{ selected_route.title }}</p>
-              <div id="route_detail"></div>
-              <p class="card-text">{{ selected_route.description }}</p>
+              <p class="card-text">{{ selected_route.description|linebreaksbr }}</p>
+              <div id="route_detail">
+                {% if selected_route %}
+                <div class="collapse" id="route_surface">
+                  <div class="card-text"><span class="font-weight-bold">Surfaces: </span><p>Service | Residential | Cycle | Unclassified</p></div>
+                  <div class="progress">
+                    <div class="progress-bar progress-bar-striped" role="progressbar" style="width: {{selected_route.surfaces.0}}%" aria-valuenow="{{selected_route.surfaces.0}}" aria-valuemin="0" aria-valuemax="100">{{selected_route.surfaces.0}}%</div>
+                    <div class="progress-bar progress-bar-striped bg-success" role="progressbar" style="width: {{selected_route.surfaces.1}}%" aria-valuenow="{{selected_route.surfaces.1}}" aria-valuemin="0" aria-valuemax="100">{{selected_route.surfaces.1}}%</div>
+                    <div class="progress-bar progress-bar-striped bg-info" role="progressbar" style="width: {{selected_route.surfaces.2}}%" aria-valuenow="{{selected_route.surfaces.2}}" aria-valuemin="0" aria-valuemax="100">{{selected_route.surfaces.2}}%</div>
+                    <div class="progress-bar progress-bar-striped bg-warning" role="progressbar" style="width: {{selected_route.surfaces.3}}%" aria-valuenow="{{selected_route.surfaces.3}}" aria-valuemin="0" aria-valuemax="100">{{selected_route.surfaces.3}}%</div>
+                  </div>
+                </div>
+                <div class="collapse card-text" id="route_calories">
+                  <div><span class="font-weight-bold">Calories: </span>{{selected_route.calories}} kcal</div>
+                </div>
+                {% endif %}
+                
+              </div>
           </div>
         </div>
       </div>
@@ -61,12 +82,12 @@
       </div>
       {% endif %}
     </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
     {% leaflet_js %}
     <script type="text/javascript" src="https://unpkg.com/requirejs@latest/require.js"></script>
     <script type="text/javascript" src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script type="text/javascript" src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script type="text/javascript" src="https://www.liedman.net/lrm-graphhopper/dist/lrm-graphhopper-1.2.0.js"></script>
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
     {{ selected_route|json_script:"selected_route" }} 
@@ -114,11 +135,11 @@
         .on('routeselected', function(e) {
           var route = e.route;
           const route_detail = `
-            <div class="card-text">
-              <p><span class="font-weight-bold">Total Ascend: </span>${route.summary.totalAscend}</p>
+            <div id="route_elevation" class="card-text collapse">
+              <p><span class="font-weight-bold">Total Ascend: </span>${route.summary.totalAscend.toFixed(4)}</p>
             </div>
           `;
-          document.getElementById('route_detail').innerHTML = route_detail;
+          document.getElementById('route_detail').insertAdjacentHTML('beforeend', route_detail);
         })
         .addTo(map);
 
@@ -142,6 +163,10 @@
           control.classList.remove('btn-primary');
           control.classList.add('btn-secondary');
         }
+      }
+
+      function toggle(element_id) {
+        document.getElementById(element_id).classList.toggle('show');
       }
     
     </script>
