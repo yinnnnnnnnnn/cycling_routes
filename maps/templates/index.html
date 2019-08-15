@@ -10,6 +10,8 @@
     {% leaflet_css %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.beautifymarker@1.1.1/leaflet-beautify-marker-icon.css" />
     <style>
       .leaflet-container { height: 90vh; }
       .leaflet-routing-container { width: 100% }
@@ -37,6 +39,7 @@
           <button id="toggle_surfaces" onclick="toggle('route_surface')" class="btn btn-primary" type="button">Surfaces</button>
           <button id="toggle_calories" onclick="toggle('route_calories')" class="btn btn-primary" type="button">Calories</button>
           <button id="toggle_elevation" onclick="toggle('route_elevation')" class="btn btn-primary" type="button">Elevation</button>
+          <button id="toggle_parking" onclick="toggle_parking()" class="btn btn-primary" type="button">Parking</button>
         </div>
         {% endif %}
     </nav>
@@ -90,9 +93,11 @@
     <script type="text/javascript" src="https://www.liedman.net/lrm-graphhopper/dist/lrm-graphhopper-1.2.0.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.beautifymarker@1.1.1/leaflet-beautify-marker-icon.js"></script>
     {{ selected_route|json_script:"selected_route" }} 
     <script type="text/javascript">
       var control;
+      var leaflet_map;
       function map_init(map, options) {
         var southWest = L.latLng(13.02504085518189, 80.23609399795532),
             northEast = L.latLng(13.026849183135116, 80.23797690868378),
@@ -129,7 +134,7 @@
           ], 
           {% endif %}
           routeWhileDragging: true, 
-          fitselected_routes: true,
+          fitSelectedRoutes: true,
           {% comment %} geocoder: L.Control.Geocoder.nominatim() {% endcomment %}
         })
         .on('routeselected', function(e) {
@@ -139,14 +144,13 @@
               <p><span class="font-weight-bold">Total Ascend: </span>${route.summary.totalAscend.toFixed(4)}</p>
             </div>
           `;
-          document.getElementById('route_detail').insertAdjacentHTML('beforeend', route_detail);
-        })
-        .addTo(map);
-
+          document.getElementById('route_detail').insertAdjacentHTML('beforeend', route_detail);   
+        }).addTo(map);     
         control.hide();
 
         var controlDiv = control.onAdd(map);
         document.getElementById('controls').appendChild(controlDiv);
+        leaflet_map = map;
       }
 
       function audio_control() {
@@ -168,6 +172,51 @@
       function toggle(element_id) {
         document.getElementById(element_id).classList.toggle('show');
       }
+
+      function toggle_parking() {
+        var markers = $('.beautify-marker.marker.collapse');
+        if (markers.length && markers.hasClass('show')) {
+          markers.toggleClass('show');
+        } else {
+          $.ajax({
+              url: 'https://api.cyclestreets.net/v2/pois.locations?key=9be741272a178f7a&type=cycleparking&bbox=' + leaflet_map.getBounds().toBBoxString() + '&limit=3&fields=id,latitude,longitude,name,osmTags', 
+              dataType: 'json',
+              success: function(data) {
+                data.features.forEach(function(feature) {
+                  L.marker(
+                    [feature.geometry.coordinates[1], feature.geometry.coordinates[0]], 
+                    {
+                      title: 'Cycle Parking', 
+                      icon: L.BeautifyIcon.icon({
+                        icon: 'bicycle', 
+                        iconSize: [35, 35], 
+                        iconShape: 'marker',
+                        borderColor: '#b3334f', 
+                        textColor: '#b3334f', 
+                        customClasses: "collapse"
+                      })
+                    }
+                  )
+                  .addTo(leaflet_map)
+                  .bindPopup(
+                    `
+                    <div>
+                      <h7 class="font-weight-bold">${feature.properties.name}</h5>
+                      <p>Amenity: ${feature.properties.osmTags.amenity}</p>
+                      <p>Parking Type: ${feature.properties.osmTags.bicycle_parking}</p>
+                      <p>Capacity: ${feature.properties.osmTags.capacity}</p>
+                      <p>Covered: ${feature.properties.osmTags.covered}</p>
+                      <p>Fee: ${feature.properties.osmTags.fee}</p>
+                    </div>
+                    `
+                  );
+                })
+
+                $('.beautify-marker.marker.collapse').toggleClass('show');
+              }
+            });
+          }
+        }
     
     </script>
   </body>
