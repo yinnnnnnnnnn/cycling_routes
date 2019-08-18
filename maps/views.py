@@ -28,5 +28,8 @@ class HomePageView(TemplateView):
                 selected_route = model_to_dict(Route.objects.get(id = selected_route_id))
                 selected_route['audio_display'] = selected_route['audio_display'].url
                 selected_route['surfaces'] = selected_route['surfaces'].split(',')
+                selected_route['elevation_profile'] = selected_route['elevation_profile'].url
+                if (selected_route['bike_shops']): 
+                    selected_route['bike_shops'] = eval(selected_route['bike_shops'])
 
         return render(request, self.template_name, { 'form': form, 'selected_route': selected_route })

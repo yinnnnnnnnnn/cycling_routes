@@ -18,6 +18,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='route',
             name='audio_display',
-            field=models.FileField(null=True, upload_to=maps.apps.get_upload_path),
+            field=models.FileField(null=True, upload_to=maps.apps.get_audio_upload_path),
         ),
     ]
